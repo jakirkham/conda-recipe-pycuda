@@ -1,0 +1,67 @@
+{% set name = "pycuda" %}
+{% set version = "2018.1" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 7079f7738e83ee79ae26f0827ada29fe55921fec9760201199cc2bfb69446c92
+
+build:
+  number: 0
+  skip: true  # [not linux]
+  script:
+    - export PATH="${PATH}:${CUDA_ROOT}/bin"
+    - export CXXFLAGS="${CXXFLAGS} -std=c++11"
+    - >
+      "{{ PYTHON }}" configure.py
+      --no-use-shipped-boost
+      --boost-inc-dir="${PREFIX}/include"
+      --boost-lib-dir="${PREFIX}/lib"
+      --boost-compiler="${CXX}"
+      --boost-python-libname="boost_python${PY_VER//.}"
+      --boost-thread-libname="boost_thread"
+      --cuda-root="${CUDA_ROOT}"
+      --cuda-inc-dir="${CUDA_ROOT}/include"
+      --cuda-enable-gl
+    - "{{ PYTHON }} setup.py build_ext --inplace"
+    - "{{ PYTHON }} -m pip install {{ SRC_DIR }} --no-deps --ignore-installed --no-cache-dir -vvv"
+  script_env:
+    - CUDA_ROOT
+
+requirements:
+  build:
+    - {{ compiler("c") }}
+    - {{ compiler("cxx") }}
+  host:
+    - python
+    - cython
+    - numpy
+    - boost
+    - boost-cpp
+  run:
+    - python
+    - {{ pin_compatible('numpy') }}
+    - boost
+    - boost-cpp
+    - pytools >=2011.2
+    - pytest >=2
+    - decorator >=3.2.0
+    - appdirs >=1.4.0
+    - mako
+
+test:
+  imports:
+    - pycuda
+
+about:
+  home: https://mathema.tician.de/software/pycuda/
+  license: MIT
+  license_file: LICENSE
+  summary: Python wrapper for Nvidia CUDA
+
+  dev_url: https://github.com/inducer/pycuda
+  doc_url: https://documen.tician.de/pycuda/
